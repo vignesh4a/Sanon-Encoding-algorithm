@@ -1,0 +1,222 @@
+package com.Vignesh.shannon
+
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.util.TypedValue
+import android.view.View
+import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams
+import android.widget.*
+import android.widget.TableRow.LayoutParams.FILL_PARENT
+import android.widget.TableRow.LayoutParams.WRAP_CONTENT
+import kotlin.math.*
+
+var prob :  MutableList<Double> = mutableListOf()
+var alpha :  MutableList<Double> = mutableListOf()
+var len :  MutableList<Int> = mutableListOf()
+var symbol :  MutableList<String> = mutableListOf()
+var templist : MutableList<String>? = mutableListOf()
+var bincode : MutableList<String> = mutableListOf()
+val lenFinder = {prob : Double -> ceil(log2(1/prob)).toInt()}
+
+class MainActivity : AppCompatActivity() {
+    fun clr(){
+        len.clear()
+        symbol.clear()
+        prob.clear()
+        alpha.clear()
+        templist?.clear()
+        bincode.clear()
+    }
+
+    fun binaryConvertor(value : Double,length : Int):String{
+
+        var temp= String()
+        var data = value
+
+        for (i in 1..length){
+            data *=2.0
+            temp+=(data).toInt().toString()
+            data = if(data>=1.0) (data-1.0) else (data)
+        }
+
+        return temp
+    }
+
+    fun sum(end :Int):Double{
+
+        var temp =0.0
+
+        for (i in 0..end){
+            temp+= prob[i]
+        }
+
+        return temp
+    }
+
+    fun LH():Array<Double>{
+        var temp=0.0
+        var temp2=0.0
+        for(i in 0..prob.size-1){
+            temp += prob[i]*(len[i].toDouble())
+            temp2 += prob[i]* log2(1/prob[i])
+        }
+        return arrayOf(temp,temp2)
+    }
+
+
+    fun sort(){
+
+        var temp: Double
+        var temp2: String
+
+        for(i in 0..prob.size-2){
+            for(j in 0..prob.size-i-2) {
+                if (prob[j]<prob[j+1]){
+                    temp = prob[j]
+                    prob[j] = prob[j+1]
+                    prob[j+1] = temp
+                    temp2 = symbol[j]
+                    symbol[j] = symbol[j+1]
+                    symbol[j+1] = temp2
+                }
+            }
+        }
+    }
+
+    fun dd(){
+        val tab = findViewById<TableLayout>(R.id.dl)
+        var layoutParams = TableRow.LayoutParams(
+            LayoutParams.MATCH_PARENT,
+            LayoutParams.MATCH_PARENT
+            )
+        var layoutParams2 = TableRow.LayoutParams(
+            0,
+            LayoutParams.WRAP_CONTENT,
+            50F
+        )
+        var layoutParams3 = TableRow.LayoutParams(
+            0,
+            LayoutParams.WRAP_CONTENT,
+            35F
+        )
+        var layoutParams4 = TableRow.LayoutParams(
+            0,
+            LayoutParams.WRAP_CONTENT,
+            65F
+        )
+        layoutParams.column = 1
+
+        for (i in 0..prob.size-1){
+            var tbr0 = TableRow(this)
+            var sV = TextView(this)
+            var pV = TextView(this)
+            var lV = TextView(this)
+            var cV = TextView(this)
+
+            sV.text = symbol[i]
+            pV.text = String.format("%.4f",prob[i])
+            lV.text = len[i].toString()
+            cV.text = bincode[i]
+            cV.textAlignment = View.TEXT_ALIGNMENT_CENTER
+            sV.textAlignment = View.TEXT_ALIGNMENT_CENTER
+            pV.textAlignment = View.TEXT_ALIGNMENT_CENTER
+            lV.textAlignment = View.TEXT_ALIGNMENT_CENTER
+            cV.layoutParams = layoutParams4
+            pV.layoutParams = layoutParams2
+            lV.layoutParams = layoutParams3
+            sV.layoutParams= layoutParams2
+
+
+            tbr0.addView(sV,layoutParams2)
+            tbr0.addView(pV,layoutParams2)
+            tbr0.addView(lV,layoutParams3)
+            tbr0.addView(cV,layoutParams4)
+            tab.addView(tbr0)
+        }
+
+
+
+    }
+
+    fun clrrow(){
+        val tab = findViewById<TableLayout>(R.id.dl)
+        var count = tab.childCount
+        lateinit var child  :View
+        tab.removeViews(1, max(0, tab.childCount-1))
+    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+
+        var firstTime = true
+        val ans = findViewById<TextView>(R.id.ans)
+        val solve = findViewById<Button>(R.id.solve)
+        val value = findViewById<EditText>(R.id.Value)
+
+
+
+
+        solve.setOnClickListener{
+            if(!firstTime){
+                clrrow()
+            }
+            firstTime = false
+            var i = 0
+            var d:String?
+            d = value.text.toString()
+            if(d!!.length < 1){
+                Toast.makeText(this@MainActivity,"Invalid",Toast.LENGTH_SHORT).show()
+                clr()
+            }
+            else {
+                try {
+                    templist = d?.split(",")?.toMutableList()
+                    templist?.forEach {
+                        try {
+                            prob.add(it.toDouble())
+                        }
+                        catch (e : java.lang.NumberFormatException){
+                            prob.add((it.split("/")[0].toDouble()/it.split("/")[1].toDouble()))
+                        }
+                        symbol.add("S"+i.toString())
+                        i++
+                    }
+                    if(prob.sum()>1){
+                        Toast.makeText(this@MainActivity,"Invalid",Toast.LENGTH_SHORT).show()
+                        clr()
+                    }
+                    else{
+                        sort()
+                        alpha.add(0.0)
+                        for(i in 0..prob.size-1){
+                            alpha.add(sum(i))
+                            len.add(lenFinder(prob[i]))
+                            bincode.add(binaryConvertor(alpha[i],len[i]))
+                        }
+                        val t = LH()
+                        val L = t[0]
+                        val H = t[1]
+                        var str =""
+
+                        str += "\n\n"+"L = ${String.format("%.4f", L)} bits/symbol\n"+
+                                      "H(s) = ${String.format("%.4f",H)} bits/symbol\n"+
+                                      "Efficiency = ${String.format("%.4f",H/L*100)}%\n"+
+                                      "Redundancy = ${String.format("%.4f",(1-H/L)*100)}%\n"
+                        ans.text = str
+                        dd()
+                        clr()
+                    }
+
+
+                }
+                catch(e: Exception){
+                    Toast.makeText(this@MainActivity,"Invalid",Toast.LENGTH_SHORT).show()
+                    clr()
+                }
+            }
+        }
+
+    }
+}

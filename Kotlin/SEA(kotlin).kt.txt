@@ -1,0 +1,129 @@
+import kotlin.math.ceil
+import kotlin.math.log2
+import kotlin.math.round
+import kotlin.system.exitProcess
+
+var prob :  MutableList<Double> = mutableListOf()
+var alpha :  MutableList<Double> = mutableListOf()
+var len :  MutableList<Int> = mutableListOf()
+var symbol :  MutableList<String> = mutableListOf()
+var templist : MutableList<String>? = mutableListOf()
+var bincode : MutableList<String> = mutableListOf()
+val lenFinder = {prob : Double -> ceil(log2(1/prob)).toInt()}
+
+
+
+fun binaryConvertor(value : Double,length : Int):String{
+
+    var temp= String()
+    var data = value
+
+    for (i in 1..length){
+        data *=2.0
+        temp+=(data).toInt().toString()
+        data = if(data>=1.0) (data-1.0) else (data)
+    }
+
+    return temp
+}
+
+fun sum(end :Int):Double{
+
+    var temp =0.0
+
+    for (i in 0..end){
+        temp+= prob[i]
+    }
+
+    return temp
+}
+
+fun LH():Array<Double>{
+    var temp=0.0
+    var temp2=0.0
+    for(i in 0..prob.size-1){
+        temp += prob[i]*(len[i].toDouble())
+        temp2 += prob[i]* log2(1/prob[i])
+    }
+    return arrayOf(temp,temp2)
+}
+
+
+fun sort(){
+
+    var temp: Double
+    var temp2: String
+
+    for(i in 0..prob.size-2){
+        for(j in 0..prob.size-i-2) {
+            if (prob[j]<prob[j+1]){
+                temp = prob[j]
+                prob[j] = prob[j+1]
+                prob[j+1] = temp
+                temp2 = symbol[j]
+                symbol[j] = symbol[j+1]
+                symbol[j+1] = temp2
+            }
+        }
+    }
+}
+
+
+
+fun main(){
+    var d:String?
+    var i = 0
+    println("VIGNESH UDAY HEGDE | 4CB18EC087  ")
+    println("==========================================================")
+    println("              Shannon’s Encoding Algorithm ")
+    println("  Note format should be 0.1,3/1,15/17,0.01 with no spaces")
+    println("==========================================================")
+
+    print(">>> ")
+
+    d = readLine()
+    templist = d?.split(",")?.toMutableList()
+    templist?.forEach {
+        try {
+            prob.add(it.toDouble())
+        }
+        catch (e : java.lang.NumberFormatException){
+            prob.add((it.split("/")[0].toDouble()/it.split("/")[1].toDouble()))
+        }
+        symbol.add("S"+i.toString())
+        i++
+    }
+    if(prob.sum()>1){
+        println("invalid")
+    }
+    else{
+        sort()
+
+        alpha.add(0.0)
+        for(i in 0..prob.size-1){
+            alpha.add(sum(i))
+            len.add(lenFinder(prob[i]))
+            bincode.add(binaryConvertor(alpha[i],len[i]))
+        }
+        val t = LH()
+        val L = t[0]
+        val H = t[1]
+
+        println("----------------------------------------------------------")
+        println("Alpha Values => ${alpha}")
+        println("----------------------------------------------------------")
+        println("Symbol\tProbability\tLength\tCode\t")
+        for (i in 0..prob.size-1){
+            println("${symbol.get(i)}\t\t${String.format("%.4f", prob.get(i))}\t\t${len.get(i)}\t\t${bincode.get(i)}")
+        }
+        println("----------------------------------------------------------")
+        println("L          = ${String.format("%.4f", L)} bits/symbol")
+        println("H(s)       = ${String.format("%.4f",H)} bits/symbol")
+        println("Efficiency = ${String.format("%.4f",H/L*100)}%")
+        println("Redundancy = ${String.format("%.4f",(1-H/L)*100)}%")
+        println("==========================================================")
+        println()
+    }
+   
+
+}
